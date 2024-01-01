@@ -20,7 +20,7 @@
 \*                                                                           */
 package spinal.core.sim
 
-import java.io.{File, PrintWriter}
+import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
 import org.apache.commons.io.FileUtils
 import spinal.core.internals.{BaseNode, DeclarationStatement, GraphUtils, PhaseCheck, PhaseContext, PhaseNetlist}
 import spinal.core.{BaseType, Bits, BlackBox, Bool, Component, GlobalData, InComponent, Mem, MemSymbolesMapping, MemSymbolesTag, SInt, ScopeProperty, SpinalConfig, SpinalEnumCraft, SpinalReport, SpinalTag, SpinalTagReady, TimeNumber, UInt, Verilator, noLatchCheck}
@@ -659,6 +659,7 @@ object SpinalSimBackendSel{
 case class SpinalSimConfig(
                             var _workspacePath     : String = System.getenv().getOrDefault("SPINALSIM_WORKSPACE","./simWorkspace"),
                             var _workspaceName     : String = null,
+                            var _workspaceUseCacheDirTag : Boolean = System.getenv().getOrDefault("SPINALSIM_USE_CACHEDIRTAG", "0") != "0",
                             var _waveDepth         : Int = 0, //0 => all
                             var _spinalConfig      : SpinalConfig = SpinalConfig(),
                             var _optimisationLevel : Int = 0,
@@ -961,6 +962,16 @@ case class SpinalSimConfig(
 
     println(f"[Progress] Simulation workspace in ${new File(s"${_workspacePath}/${_workspaceName}").getAbsolutePath}")
     new File(s"${_workspacePath}").mkdirs()
+
+    if (_workspaceUseCacheDirTag) {
+      val cacheDirTagFile = new File(s"${_workspacePath}/CACHEDIR.TAG")
+      if (!cacheDirTagFile.exists()) {
+        val bf = new BufferedWriter(new FileWriter(cacheDirTagFile))
+        bf.write("Signature: 8a477f597d28d172789f06886806bc55\n")
+        bf.close()
+      }
+    }
+
     FileUtils.deleteQuietly(new File(s"${_workspacePath}/${_workspaceName}"))
     new File(s"${_workspacePath}/${_workspaceName}").mkdirs()
     new File(s"${_workspacePath}/${_workspaceName}/rtl").mkdirs()
